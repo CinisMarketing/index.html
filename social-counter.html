@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Social Counter</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --card-bg: #111118;
+    --border: rgba(255,255,255,0.07);
+    --text: #f0f0f5;
+    --muted: rgba(240,240,245,0.35);
+    --ig: #E1306C;
+    --yt: #FF0000;
+    --tt: #69C9D0;
+    --tw: #1DA1F2;
+    --ig-glow: rgba(225,48,108,0.15);
+    --yt-glow: rgba(255,0,0,0.15);
+    --tt-glow: rgba(105,201,208,0.15);
+    --tw-glow: rgba(29,161,242,0.15);
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    overflow: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    padding: 28px 32px 20px;
+  }
+
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.18;
+    pointer-events: none;
+    z-index: 0;
+    transition: background 0.8s ease;
+  }
+  .orb-1 { width: 500px; height: 500px; background: #E1306C; top: -150px; left: -100px; }
+  .orb-2 { width: 400px; height: 400px; background: #69C9D0; bottom: -100px; right: -80px; }
+  .orb-3 { width: 300px; height: 300px; background: #1DA1F2; top: 40%; left: 50%; transform: translate(-50%,-50%); }
+
+  header {
+    position: relative; z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-shrink: 0;
+  }
+
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 8px #4ade80;
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+  .brand-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .header-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .header-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.12em;
+    color: var(--text);
+  }
+
+  /* ── GRID (multi-platform) ── */
+  .grid {
+    position: relative; z-index: 2;
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 16px;
+    min-height: 0;
+  }
+  .grid.hidden { display: none; }
+
+  /* ── SOLO view ── */
+  .solo-view {
+    position: relative; z-index: 2;
+    flex: 1;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+  }
+  .solo-view.active { display: flex; }
+
+  .solo-card {
+    width: 100%;
+    max-width: 700px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    padding: 52px 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .solo-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--solo-accent, #fff), transparent);
+    opacity: 0.8;
+  }
+  .solo-glow {
+    position: absolute;
+    width: 400px; height: 300px;
+    border-radius: 50%;
+    filter: blur(80px);
+    top: -100px; left: 50%; transform: translateX(-50%);
+    pointer-events: none;
+    transition: background 0.6s ease;
+  }
+  .solo-icon {
+    width: 72px; height: 72px;
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 20px;
+    position: relative; z-index: 1;
+  }
+  .solo-icon svg { width: 36px; height: 36px; }
+  .solo-platform-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+    position: relative; z-index: 1;
+  }
+  .solo-handle {
+    font-size: 20px;
+    color: var(--text);
+    font-weight: 300;
+    margin-bottom: 44px;
+    position: relative; z-index: 1;
+  }
+  .solo-count-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    position: relative; z-index: 1;
+  }
+  .solo-count {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(72px, 13vw, 148px);
+    line-height: 0.85;
+    letter-spacing: 0.03em;
+    transition: color 0.5s ease;
+    position: relative; z-index: 1;
+  }
+  .solo-count.flash { animation: count-flash 0.4s ease; }
+  @keyframes count-flash {
+    0% { opacity: 1; }
+    40% { opacity: 0.2; }
+    100% { opacity: 1; }
+  }
+  .solo-delta {
+    margin-top: 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    color: #4ade80;
+    height: 20px;
+    transition: opacity 0.4s ease;
+    position: relative; z-index: 1;
+  }
+  .solo-delta.neg { color: #f87171; }
+  .solo-delta.hidden { opacity: 0; }
+
+  /* ── Cards (multi mode) ── */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    cursor: default;
+    transition: transform 0.3s ease;
+  }
+  .card:hover { transform: translateY(-2px); }
+  .card.ig { --accent: var(--ig); --glow: var(--ig-glow); }
+  .card.yt { --accent: var(--yt); --glow: var(--yt-glow); }
+  .card.tt { --accent: var(--tt); --glow: var(--tt-glow); }
+  .card.tw { --accent: var(--tw); --glow: var(--tw-glow); }
+  .card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.6;
+  }
+  .card-glow {
+    position: absolute;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: var(--glow);
+    filter: blur(60px);
+    top: -50px; right: -30px;
+    pointer-events: none;
+  }
+  .card-top { display: flex; align-items: center; justify-content: space-between; }
+  .platform-info { display: flex; align-items: center; gap: 10px; }
+  .platform-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
+  }
+  .platform-icon svg { width: 18px; height: 18px; }
+  .platform-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .platform-handle {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 400;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+  }
+  .update-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .update-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-right: 5px;
+    vertical-align: middle;
+    box-shadow: 0 0 6px var(--accent);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  .count-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .count-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(38px, 4.8vw, 72px);
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+    color: var(--text);
+  }
+  .count-display.updating { animation: count-flash 0.4s ease; }
+  .count-accent { color: var(--accent); }
+  .delta {
+    margin-top: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: #4ade80;
+    letter-spacing: 0.05em;
+    height: 14px;
+    transition: opacity 0.4s ease;
+  }
+  .delta.neg { color: #f87171; }
+  .delta.hidden { opacity: 0; }
+
+  /* ── Bottom bar ── */
+  .bottom-bar {
+    position: relative; z-index: 2;
+    margin-top: 16px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .total-section { display: flex; align-items: baseline; gap: 10px; }
+  .total-section.hidden { visibility: hidden; }
+  .total-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .total-count {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, #E1306C, #1DA1F2, #69C9D0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .refresh-info {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .progress-ring { width: 18px; height: 18px; }
+  .progress-ring svg { transform: rotate(-90deg); }
+  .ring-bg { stroke: rgba(255,255,255,0.08); }
+  .ring-fg { stroke: #1DA1F2; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+
+  .settings-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+  }
+  .settings-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.72);
+    backdrop-filter: blur(14px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: #13131b;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 36px;
+    width: min(600px, 92vw);
+    max-height: 88vh;
+    overflow-y: auto;
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+  .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+  /* View mode toggle */
+  .view-toggle {
+    display: flex;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+    margin-bottom: 22px;
+  }
+  .view-toggle-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-radius: 9px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 10px 8px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .view-toggle-btn.selected { background: rgba(255,255,255,0.1); color: var(--text); }
+
+  /* Platform picker */
+  .platform-selector {
+    display: none;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .platform-selector.visible { display: grid; }
+  .platform-pick-btn {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+  }
+  .platform-pick-btn:hover { background: rgba(255,255,255,0.08); }
+  .platform-pick-btn.selected { border-color: var(--pick-color); color: var(--text); background: rgba(255,255,255,0.06); }
+  .pick-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pick-color); flex-shrink: 0; }
+
+  .section-divider {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 18px 0 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field-group { margin-bottom: 0; }
+  .field-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .field-label-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .field-input {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field-input:focus { border-color: rgba(255,255,255,0.2); }
+  .field-input::placeholder { color: rgba(240,240,245,0.2); }
+
+  .api-note {
+    margin-top: 20px;
+    background: rgba(255,165,0,0.07);
+    border: 1px solid rgba(255,165,0,0.14);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 12px;
+    color: rgba(255,165,0,0.65);
+    line-height: 1.55;
+  }
+  .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+  .btn-save {
+    flex: 1;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 14px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    font-weight: 500;
+  }
+  .btn-save:hover { opacity: 0.85; }
+  .btn-cancel {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 14px 20px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-cancel:hover { background: rgba(255,255,255,0.1); }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<header>
+  <div class="brand">
+    <div class="brand-dot"></div>
+    <span class="brand-label">Live</span>
+  </div>
+  <div class="header-title">SOCIAL PULSE</div>
+  <div class="header-time" id="clock">--:--:--</div>
+</header>
+
+<!-- Multi-platform grid -->
+<div class="grid" id="grid-view">
+  <div class="card ig">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="platform-info">
+        <div class="platform-icon">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="#E1306C" stroke-width="1.8"/><circle cx="12" cy="12" r="4" stroke="#E1306C" stroke-width="1.8"/><circle cx="17.5" cy="6.5" r="1" fill="#E1306C"/></svg>
+        </div>
+        <div>
+          <div class="platform-name">Instagram</div>
+          <div class="platform-handle" id="ig-handle">@yourbrand</div>
+        </div>
+      </div>
+      <div class="update-badge"><span class="update-dot"></span>LIVE</div>
+    </div>
+    <div>
+      <div class="count-label">Followers</div>
+      <div class="count-display" id="ig-count"><span class="count-accent">0</span></div>
+      <div class="delta hidden" id="ig-delta"></div>
+    </div>
+  </div>
+
+  <div class="card yt">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="platform-info">
+        <div class="platform-icon">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="4" stroke="#FF0000" stroke-width="1.8"/><path d="M10 9.5L15 12L10 14.5V9.5Z" fill="#FF0000"/></svg>
+        </div>
+        <div>
+          <div class="platform-name">YouTube</div>
+          <div class="platform-handle" id="yt-handle">Your Channel</div>
+        </div>
+      </div>
+      <div class="update-badge"><span class="update-dot"></span>LIVE</div>
+    </div>
+    <div>
+      <div class="count-label">Subscribers</div>
+      <div class="count-display" id="yt-count"><span class="count-accent">0</span></div>
+      <div class="delta hidden" id="yt-delta"></div>
+    </div>
+  </div>
+
+  <div class="card tt">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="platform-info">
+        <div class="platform-icon">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" stroke="#69C9D0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <div class="platform-name">TikTok</div>
+          <div class="platform-handle" id="tt-handle">@yourbrand</div>
+        </div>
+      </div>
+      <div class="update-badge"><span class="update-dot"></span>LIVE</div>
+    </div>
+    <div>
+      <div class="count-label">Followers</div>
+      <div class="count-display" id="tt-count"><span class="count-accent">0</span></div>
+      <div class="delta hidden" id="tt-delta"></div>
+    </div>
+  </div>
+
+  <div class="card tw">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="platform-info">
+        <div class="platform-icon">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 4L20 20M4 20L20 4" stroke="#1DA1F2" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <div class="platform-name">X (Twitter)</div>
+          <div class="platform-handle" id="tw-handle">@yourbrand</div>
+        </div>
+      </div>
+      <div class="update-badge"><span class="update-dot"></span>LIVE</div>
+    </div>
+    <div>
+      <div class="count-label">Followers</div>
+      <div class="count-display" id="tw-count"><span class="count-accent">0</span></div>
+      <div class="delta hidden" id="tw-delta"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Solo (single platform) view -->
+<div class="solo-view" id="solo-view">
+  <div class="solo-card">
+    <div class="solo-glow" id="solo-glow"></div>
+    <div class="solo-icon" id="solo-icon"></div>
+    <div class="solo-platform-name" id="solo-platform-name">Platform</div>
+    <div class="solo-handle" id="solo-handle">@handle</div>
+    <div class="solo-count-label" id="solo-count-label">Followers</div>
+    <div class="solo-count" id="solo-count">0</div>
+    <div class="solo-delta hidden" id="solo-delta"></div>
+  </div>
+</div>
+
+<div class="bottom-bar">
+  <div class="total-section" id="total-section">
+    <span class="total-label">Total Reach</span>
+    <span class="total-count" id="total-count">0</span>
+  </div>
+  <div class="refresh-info">
+    <div class="progress-ring">
+      <svg width="18" height="18" viewBox="0 0 18 18">
+        <circle class="ring-bg" cx="9" cy="9" r="7" fill="none" stroke-width="1.5"/>
+        <circle class="ring-fg" id="ring" cx="9" cy="9" r="7" fill="none" stroke-width="1.5"
+          stroke-dasharray="43.98" stroke-dashoffset="0"/>
+      </svg>
+    </div>
+    <span id="next-update">Updates every 60s</span>
+  </div>
+  <button class="settings-btn" onclick="openModal()">⚙ CONFIGURE</button>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title">Configure Display</div>
+    <div class="modal-sub">Choose your view mode then enter your follower counts.</div>
+
+    <div class="view-toggle">
+      <button class="view-toggle-btn selected" id="toggle-all" onclick="setModalMode('all')">⊞ All Platforms</button>
+      <button class="view-toggle-btn" id="toggle-solo" onclick="setModalMode('solo')">◉ Single Platform</button>
+    </div>
+
+    <div class="platform-selector" id="platform-selector">
+      <button class="platform-pick-btn selected" id="pick-ig" onclick="pickPlatform('ig')" style="--pick-color:#E1306C">
+        <span class="pick-dot"></span>Instagram
+      </button>
+      <button class="platform-pick-btn" id="pick-yt" onclick="pickPlatform('yt')" style="--pick-color:#FF0000">
+        <span class="pick-dot"></span>YouTube
+      </button>
+      <button class="platform-pick-btn" id="pick-tt" onclick="pickPlatform('tt')" style="--pick-color:#69C9D0">
+        <span class="pick-dot"></span>TikTok
+      </button>
+      <button class="platform-pick-btn" id="pick-tw" onclick="pickPlatform('tw')" style="--pick-color:#1DA1F2">
+        <span class="pick-dot"></span>X (Twitter)
+      </button>
+    </div>
+
+    <div class="section-divider">Account Details</div>
+
+    <div class="fields-grid">
+      <div class="field-group">
+        <div class="field-label"><span class="field-label-dot" style="background:#E1306C"></span>Instagram Handle</div>
+        <input class="field-input" id="cfg-ig-handle" placeholder="@yourbrand">
+      </div>
+      <div class="field-group">
+        <div class="field-label"><span class="field-label-dot" style="background:#E1306C"></span>Instagram Followers</div>
+        <input class="field-input" id="cfg-ig-count" placeholder="24817" type="number">
+      </div>
+      <div class="field-group">
+        <div class="field-label"><span class="field-label-dot" style="background:#FF0000"></span>YouTube Channel</div>
+        <input class="field-input" id="cfg-yt-handle" placeholder="Your Channel">
+      </div>
+      <div class="field-group">
+        <div class="field-label"><span class="field-label-dot" style="background:#FF0000"></span>YouTube Subscribers</div>
+        <input class="field-input" id="cfg-yt-count" placeholder="11243" type="number">
+      </div>
+      <div class="field-group">
+        <div class="field-label"><span class="field-label-dot" style="background:#69C9D0"></span>TikTok Handle</div>
+        <input class="field-input" id="cfg-tt-handle" placeholder="@yourbrand">
+      </div>
+      <div class="field-group">
+        <div class="field-label"><span class="field-label-dot" style="background:#69C9D0"></span>TikTok Followers</div>
+        <input class="field-input" id="cfg-tt-count" placeholder="58412" type="number">
+      </div>
+      <div class="field-group">
+        <div class="field-label"><span class="field-label-dot" style="background:#1DA1F2"></span>X Handle</div>
+        <input class="field-input" id="cfg-tw-handle" placeholder="@yourbrand">
+      </div>
+      <div class="field-group">
+        <div class="field-label"><span class="field-label-dot" style="background:#1DA1F2"></span>X Followers</div>
+        <input class="field-input" id="cfg-tw-count" placeholder="9103" type="number">
+      </div>
+    </div>
+
+    <div class="api-note">
+      ⚠ Numbers are always shown in full — no rounding, ever. Live auto-updating requires API keys from each platform. This demo uses manually entered counts with simulated micro-changes to demonstrate the live effect.
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveConfig()">Save & Display</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const state = {
+    ig: { count: 24817, handle: '@socialpulse', prev: 24817, label: 'Followers' },
+    yt: { count: 11243, handle: 'Social Pulse', prev: 11243, label: 'Subscribers' },
+    tt: { count: 58412, handle: '@socialpulse', prev: 58412, label: 'Followers' },
+    tw: { count: 9103,  handle: '@socialpulse', prev: 9103,  label: 'Followers' },
+  };
+
+  const meta = {
+    ig: { name:'Instagram',  color:'#E1306C', glow:'rgba(225,48,108,0.22)',  icon:`<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="#E1306C" stroke-width="1.8"/><circle cx="12" cy="12" r="4" stroke="#E1306C" stroke-width="1.8"/><circle cx="17.5" cy="6.5" r="1" fill="#E1306C"/></svg>` },
+    yt: { name:'YouTube',    color:'#FF0000', glow:'rgba(255,0,0,0.22)',      icon:`<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="4" stroke="#FF0000" stroke-width="1.8"/><path d="M10 9.5L15 12L10 14.5V9.5Z" fill="#FF0000"/></svg>` },
+    tt: { name:'TikTok',     color:'#69C9D0', glow:'rgba(105,201,208,0.22)', icon:`<svg viewBox="0 0 24 24" fill="none"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" stroke="#69C9D0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>` },
+    tw: { name:'X (Twitter)',color:'#1DA1F2', glow:'rgba(29,161,242,0.22)',  icon:`<svg viewBox="0 0 24 24" fill="none"><path d="M4 4L20 20M4 20L20 4" stroke="#1DA1F2" stroke-width="1.8" stroke-linecap="round"/></svg>` },
+  };
+
+  let viewMode  = 'all';
+  let soloId    = 'ig';
+  let modalMode = 'all';
+  let modalSolo = 'ig';
+
+  // Always show the exact integer, formatted with commas only
+  function fmt(n) { return n.toLocaleString(); }
+
+  function updateCard(id) {
+    const d  = state[id];
+    const el = document.getElementById(id + '-count');
+    const de = document.getElementById(id + '-delta');
+    document.getElementById(id + '-handle').textContent = d.handle;
+    el.innerHTML = `<span class="count-accent">${fmt(d.count)}</span>`;
+    el.classList.remove('updating'); void el.offsetWidth; el.classList.add('updating');
+    const diff = d.count - d.prev;
+    if (diff !== 0) {
+      de.className = 'delta' + (diff < 0 ? ' neg' : '');
+      de.textContent = (diff > 0 ? '▲ +' : '▼ ') + Math.abs(diff).toLocaleString() + ' since last update';
+      de.classList.remove('hidden');
+      clearTimeout(de._t);
+      de._t = setTimeout(() => de.classList.add('hidden'), 5000);
+    }
+  }
+
+  function updateSolo() {
+    const d = state[soloId];
+    const m = meta[soloId];
+    document.getElementById('solo-icon').innerHTML          = m.icon;
+    document.getElementById('solo-platform-name').textContent = m.name;
+    document.getElementById('solo-handle').textContent      = d.handle;
+    document.getElementById('solo-count-label').textContent = d.label;
+    document.getElementById('solo-glow').style.background   = m.glow;
+
+    const countEl = document.getElementById('solo-count');
+    countEl.style.color = m.color;
+    countEl.textContent = fmt(d.count);
+    countEl.classList.remove('flash'); void countEl.offsetWidth; countEl.classList.add('flash');
+
+    // Ambient orbs follow the solo platform colour
+    document.querySelector('.orb-1').style.background = m.color;
+    document.querySelector('.orb-3').style.background = m.color;
+
+    const diff = d.count - d.prev;
+    const de   = document.getElementById('solo-delta');
+    if (diff !== 0) {
+      de.className = 'solo-delta' + (diff < 0 ? ' neg' : '');
+      de.textContent = (diff > 0 ? '▲ +' : '▼ ') + Math.abs(diff).toLocaleString() + ' since last update';
+      de.classList.remove('hidden');
+      clearTimeout(de._t);
+      de._t = setTimeout(() => de.classList.add('hidden'), 6000);
+    }
+  }
+
+  function updateAll() {
+    Object.keys(state).forEach(id => updateCard(id));
+    const total = Object.values(state).reduce((s, v) => s + v.count, 0);
+    document.getElementById('total-count').textContent = fmt(total);
+    if (viewMode === 'solo') updateSolo();
+  }
+
+  function applyViewMode() {
+    const grid  = document.getElementById('grid-view');
+    const solo  = document.getElementById('solo-view');
+    const total = document.getElementById('total-section');
+    if (viewMode === 'solo') {
+      grid.classList.add('hidden');
+      solo.classList.add('active');
+      total.classList.add('hidden');
+      updateSolo();
+    } else {
+      grid.classList.remove('hidden');
+      solo.classList.remove('active');
+      total.classList.remove('hidden');
+      document.querySelector('.orb-1').style.background = '#E1306C';
+      document.querySelector('.orb-3').style.background = '#1DA1F2';
+    }
+  }
+
+  function simulateLiveUpdates() {
+    Object.keys(state).forEach(id => {
+      const s  = state[id];
+      s.prev   = s.count;
+      const d  = Math.random() < 0.65
+        ? Math.floor(Math.random() * 4) + 1
+        : -(Math.floor(Math.random() * 2));
+      s.count  = Math.max(0, s.count + d);
+    });
+    updateAll();
+  }
+
+  function updateClock() {
+    const n   = new Date();
+    const pad = x => String(x).padStart(2,'0');
+    document.getElementById('clock').textContent =
+      pad(n.getHours()) + ':' + pad(n.getMinutes()) + ':' + pad(n.getSeconds());
+  }
+
+  const INTERVAL = 60;
+  let countdown  = INTERVAL;
+  const ring     = document.getElementById('ring');
+  const CIRCUM   = 43.98;
+  function updateRing() {
+    ring.style.strokeDashoffset = CIRCUM * (1 - countdown / INTERVAL);
+    document.getElementById('next-update').textContent = 'Next update in ' + countdown + 's';
+    if (--countdown < 0) { countdown = INTERVAL; simulateLiveUpdates(); }
+  }
+
+  // Modal
+  function openModal() {
+    Object.keys(state).forEach(id => {
+      document.getElementById('cfg-' + id + '-handle').value = state[id].handle;
+      document.getElementById('cfg-' + id + '-count').value  = state[id].count;
+    });
+    modalMode = viewMode; modalSolo = soloId;
+    syncModalUI();
+    document.getElementById('modal').classList.add('open');
+  }
+  function closeModal() { document.getElementById('modal').classList.remove('open'); }
+  function setModalMode(m) { modalMode = m; syncModalUI(); }
+  function pickPlatform(id) {
+    modalSolo = id;
+    document.querySelectorAll('.platform-pick-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('pick-' + id).classList.add('selected');
+  }
+  function syncModalUI() {
+    document.getElementById('toggle-all').classList.toggle('selected',  modalMode === 'all');
+    document.getElementById('toggle-solo').classList.toggle('selected', modalMode === 'solo');
+    document.getElementById('platform-selector').classList.toggle('visible', modalMode === 'solo');
+    // Keep pick buttons in sync
+    document.querySelectorAll('.platform-pick-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('pick-' + modalSolo).classList.add('selected');
+  }
+  function saveConfig() {
+    Object.keys(state).forEach(id => {
+      const h = document.getElementById('cfg-' + id + '-handle').value.trim();
+      const c = parseInt(document.getElementById('cfg-' + id + '-count').value);
+      if (h) state[id].handle = h;
+      if (!isNaN(c)) { state[id].prev = state[id].count; state[id].count = c; }
+    });
+    viewMode = modalMode; soloId = modalSolo;
+    applyViewMode(); updateAll(); closeModal();
+  }
+
+  document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
+
+  // Boot
+  updateAll();
+  updateClock();
+  applyViewMode();
+  setInterval(updateClock, 1000);
+  setInterval(updateRing, 1000);
+</script>
+</body>
+</html>
