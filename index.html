@@ -742,12 +742,300 @@
   </div>
 </div>
 
+<style>
+  /* ── First-time setup overlay ── */
+  .setup-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: #0a0a0f;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.5s ease;
+  }
+  .setup-overlay.hidden { opacity: 0; pointer-events: none; }
+
+  .setup-card {
+    width: min(560px, 92vw);
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #13131b;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 28px;
+    padding: 44px 40px;
+  }
+
+  .setup-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 0.14em;
+    margin-bottom: 6px;
+  }
+  .setup-sub {
+    font-size: 14px;
+    color: rgba(240,240,245,0.4);
+    margin-bottom: 32px;
+    line-height: 1.5;
+  }
+
+  .setup-section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(240,240,245,0.35);
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .setup-section-label::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.07); }
+
+  /* Platform toggle cards */
+  .platform-toggles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .platform-toggle-card {
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    user-select: none;
+  }
+  .platform-toggle-card.on {
+    border-color: var(--pt-color);
+    background: rgba(255,255,255,0.06);
+  }
+  .pt-left { display: flex; align-items: center; gap: 10px; }
+  .pt-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--pt-color); flex-shrink: 0; }
+  .pt-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(240,240,245,0.5);
+    transition: color 0.2s;
+  }
+  .platform-toggle-card.on .pt-name { color: var(--text); }
+
+  /* Toggle switch */
+  .toggle-switch {
+    width: 34px; height: 20px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    position: relative;
+    transition: background 0.25s;
+    flex-shrink: 0;
+  }
+  .platform-toggle-card.on .toggle-switch { background: var(--pt-color); }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 14px; height: 14px;
+    background: white;
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: transform 0.25s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .platform-toggle-card.on .toggle-switch::after { transform: translateX(14px); }
+
+  /* Setup fields — shown per enabled platform */
+  .setup-fields { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
+  .setup-platform-block {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-left: 2px solid var(--pb-color);
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: none;
+  }
+  .setup-platform-block.visible { display: block; }
+  .setup-platform-block-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--pb-color);
+    margin-bottom: 12px;
+  }
+  .setup-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* View mode in setup */
+  .setup-view-toggle {
+    display: flex;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 4px; gap: 4px;
+    margin-bottom: 28px;
+  }
+  .svt-btn {
+    flex: 1;
+    background: transparent; border: none;
+    border-radius: 9px;
+    color: rgba(240,240,245,0.35);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 10px 8px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .svt-btn.selected { background: rgba(255,255,255,0.1); color: var(--text); }
+
+  /* Solo platform picker in setup */
+  .setup-solo-picker {
+    display: none;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+  .setup-solo-picker.visible { display: grid; }
+  .ssp-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    color: rgba(240,240,245,0.4);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 11px 14px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+  }
+  .ssp-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+  .ssp-btn.selected { border-color: var(--sp-color); color: var(--text); background: rgba(255,255,255,0.06); }
+  .ssp-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--sp-color); }
+
+  .btn-launch {
+    width: 100%;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 16px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    font-weight: 500;
+  }
+  .btn-launch:hover { opacity: 0.88; }
+</style>
+
+<!-- First-time setup overlay -->
+<div class="setup-overlay" id="setup-overlay">
+  <div class="setup-card">
+    <div class="setup-logo">SOCIAL PULSE</div>
+    <div class="setup-sub">Set up your display in 60 seconds. You can change everything later.</div>
+
+    <div class="setup-section-label">Which platforms do you use?</div>
+    <div class="platform-toggles">
+      <div class="platform-toggle-card on" id="pt-ig" style="--pt-color:#E1306C" onclick="togglePlatform('ig')">
+        <div class="pt-left"><span class="pt-dot"></span><span class="pt-name">Instagram</span></div>
+        <div class="toggle-switch"></div>
+      </div>
+      <div class="platform-toggle-card on" id="pt-yt" style="--pt-color:#FF0000" onclick="togglePlatform('yt')">
+        <div class="pt-left"><span class="pt-dot"></span><span class="pt-name">YouTube</span></div>
+        <div class="toggle-switch"></div>
+      </div>
+      <div class="platform-toggle-card on" id="pt-tt" style="--pt-color:#69C9D0" onclick="togglePlatform('tt')">
+        <div class="pt-left"><span class="pt-dot"></span><span class="pt-name">TikTok</span></div>
+        <div class="toggle-switch"></div>
+      </div>
+      <div class="platform-toggle-card on" id="pt-tw" style="--pt-color:#1DA1F2" onclick="togglePlatform('tw')">
+        <div class="pt-left"><span class="pt-dot"></span><span class="pt-name">X (Twitter)</span></div>
+        <div class="toggle-switch"></div>
+      </div>
+    </div>
+
+    <div class="setup-section-label">Enter your details</div>
+    <div class="setup-fields">
+      <div class="setup-platform-block visible" id="pb-ig" style="--pb-color:#E1306C">
+        <div class="setup-platform-block-title">Instagram</div>
+        <div class="setup-row">
+          <div class="field-group">
+            <div class="field-label">Handle</div>
+            <input class="field-input" id="s-ig-handle" placeholder="@yourbrand">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Followers</div>
+            <input class="field-input" id="s-ig-count" placeholder="0" type="number" min="0">
+          </div>
+        </div>
+      </div>
+      <div class="setup-platform-block visible" id="pb-yt" style="--pb-color:#FF0000">
+        <div class="setup-platform-block-title">YouTube</div>
+        <div class="setup-row">
+          <div class="field-group">
+            <div class="field-label">Channel Name</div>
+            <input class="field-input" id="s-yt-handle" placeholder="Your Channel">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Subscribers</div>
+            <input class="field-input" id="s-yt-count" placeholder="0" type="number" min="0">
+          </div>
+        </div>
+      </div>
+      <div class="setup-platform-block visible" id="pb-tt" style="--pb-color:#69C9D0">
+        <div class="setup-platform-block-title">TikTok</div>
+        <div class="setup-row">
+          <div class="field-group">
+            <div class="field-label">Handle</div>
+            <input class="field-input" id="s-tt-handle" placeholder="@yourbrand">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Followers</div>
+            <input class="field-input" id="s-tt-count" placeholder="0" type="number" min="0">
+          </div>
+        </div>
+      </div>
+      <div class="setup-platform-block visible" id="pb-tw" style="--pb-color:#1DA1F2">
+        <div class="setup-platform-block-title">X (Twitter)</div>
+        <div class="setup-row">
+          <div class="field-group">
+            <div class="field-label">Handle</div>
+            <input class="field-input" id="s-tw-handle" placeholder="@yourbrand">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Followers</div>
+            <input class="field-input" id="s-tw-count" placeholder="0" type="number" min="0">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="setup-section-label">How do you want to display it?</div>
+    <div class="setup-view-toggle">
+      <button class="svt-btn selected" id="svt-all" onclick="setSetupMode('all')">⊞ All Platforms</button>
+      <button class="svt-btn" id="svt-solo" onclick="setSetupMode('solo')">◉ Single Platform</button>
+    </div>
+
+    <div class="setup-solo-picker" id="setup-solo-picker">
+      <button class="ssp-btn selected" id="ssp-ig" onclick="pickSetupSolo('ig')" style="--sp-color:#E1306C"><span class="ssp-dot"></span>Instagram</button>
+      <button class="ssp-btn" id="ssp-yt" onclick="pickSetupSolo('yt')" style="--sp-color:#FF0000"><span class="ssp-dot"></span>YouTube</button>
+      <button class="ssp-btn" id="ssp-tt" onclick="pickSetupSolo('tt')" style="--sp-color:#69C9D0"><span class="ssp-dot"></span>TikTok</button>
+      <button class="ssp-btn" id="ssp-tw" onclick="pickSetupSolo('tw')" style="--sp-color:#1DA1F2"><span class="ssp-dot"></span>X (Twitter)</button>
+    </div>
+
+    <button class="btn-launch" onclick="launchFromSetup()">Launch Display →</button>
+  </div>
+</div>
+
 <script>
-  const state = {
-    ig: { count: 24817, handle: '@socialpulse', prev: 24817, label: 'Followers' },
-    yt: { count: 11243, handle: 'Social Pulse', prev: 11243, label: 'Subscribers' },
-    tt: { count: 58412, handle: '@socialpulse', prev: 58412, label: 'Followers' },
-    tw: { count: 9103,  handle: '@socialpulse', prev: 9103,  label: 'Followers' },
+  // ── Default state (blank — user fills in setup) ──
+  const defaults = {
+    ig: { count: 0, handle: '', prev: 0, label: 'Followers',   enabled: true },
+    yt: { count: 0, handle: '', prev: 0, label: 'Subscribers', enabled: true },
+    tt: { count: 0, handle: '', prev: 0, label: 'Followers',   enabled: true },
+    tw: { count: 0, handle: '', prev: 0, label: 'Followers',   enabled: true },
   };
 
   const meta = {
@@ -757,12 +1045,115 @@
     tw: { name:'X (Twitter)',color:'#1DA1F2', glow:'rgba(29,161,242,0.22)',  icon:`<svg viewBox="0 0 24 24" fill="none"><path d="M4 4L20 20M4 20L20 4" stroke="#1DA1F2" stroke-width="1.8" stroke-linecap="round"/></svg>` },
   };
 
+  let state     = JSON.parse(JSON.stringify(defaults));
   let viewMode  = 'all';
   let soloId    = 'ig';
   let modalMode = 'all';
   let modalSolo = 'ig';
+  let setupMode = 'all';
+  let setupSolo = 'ig';
+  let setupEnabled = { ig: true, yt: true, tt: true, tw: true };
 
-  // Always show the exact integer, formatted with commas only
+  const STORAGE_KEY = 'socialpulse_v1';
+
+  // ── Persist & restore ──
+  function saveToStorage() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      state, viewMode, soloId
+    }));
+  }
+
+  function loadFromStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      const saved = JSON.parse(raw);
+      state    = saved.state    || state;
+      viewMode = saved.viewMode || 'all';
+      soloId   = saved.soloId   || 'ig';
+      return true;
+    } catch(e) { return false; }
+  }
+
+  // ── Setup screen ──
+  function togglePlatform(id) {
+    setupEnabled[id] = !setupEnabled[id];
+    document.getElementById('pt-' + id).classList.toggle('on', setupEnabled[id]);
+    document.getElementById('pb-' + id).classList.toggle('visible', setupEnabled[id]);
+    // Disable solo picker button if platform off
+    const sspBtn = document.getElementById('ssp-' + id);
+    sspBtn.disabled = !setupEnabled[id];
+    if (!setupEnabled[id] && setupSolo === id) {
+      // Pick first enabled
+      const first = Object.keys(setupEnabled).find(k => setupEnabled[k]);
+      if (first) pickSetupSolo(first);
+    }
+  }
+
+  function setSetupMode(m) {
+    setupMode = m;
+    document.getElementById('svt-all').classList.toggle('selected', m === 'all');
+    document.getElementById('svt-solo').classList.toggle('selected', m === 'solo');
+    document.getElementById('setup-solo-picker').classList.toggle('visible', m === 'solo');
+  }
+
+  function pickSetupSolo(id) {
+    if (!setupEnabled[id]) return;
+    setupSolo = id;
+    document.querySelectorAll('.ssp-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('ssp-' + id).classList.add('selected');
+  }
+
+  function launchFromSetup() {
+    // Read values from setup form
+    Object.keys(state).forEach(id => {
+      const h = document.getElementById('s-' + id + '-handle').value.trim();
+      const c = parseInt(document.getElementById('s-' + id + '-count').value) || 0;
+      state[id].handle  = h || meta[id].name;
+      state[id].count   = c;
+      state[id].prev    = c;
+      state[id].enabled = setupEnabled[id];
+    });
+    viewMode = setupMode;
+    soloId   = setupSolo;
+
+    // Hide setup, show app
+    const overlay = document.getElementById('setup-overlay');
+    overlay.classList.add('hidden');
+    setTimeout(() => overlay.style.display = 'none', 500);
+
+    // Apply and save
+    applyEnabledPlatforms();
+    applyViewMode();
+    updateAll();
+    saveToStorage();
+  }
+
+  // ── Apply which platforms are enabled in grid ──
+  function applyEnabledPlatforms() {
+    ['ig','yt','tt','tw'].forEach(id => {
+      const card = document.querySelector('.card.' + id);
+      if (card) card.style.display = state[id].enabled ? '' : 'none';
+    });
+    // Adjust grid columns based on how many are enabled
+    const enabledCount = Object.values(state).filter(s => s.enabled).length;
+    const grid = document.getElementById('grid-view');
+    if (enabledCount === 1) {
+      grid.style.gridTemplateColumns = '1fr';
+      grid.style.gridTemplateRows = '1fr';
+    } else if (enabledCount === 2) {
+      grid.style.gridTemplateColumns = '1fr 1fr';
+      grid.style.gridTemplateRows = '1fr';
+    } else if (enabledCount === 3) {
+      grid.style.gridTemplateColumns = '1fr 1fr';
+      grid.style.gridTemplateRows = '1fr 1fr';
+    } else {
+      grid.style.gridTemplateColumns = '1fr 1fr';
+      grid.style.gridTemplateRows = '1fr 1fr';
+    }
+  }
+
+  // ── Fmt: exact numbers, commas only ──
   function fmt(n) { return n.toLocaleString(); }
 
   function updateCard(id) {
@@ -785,21 +1176,17 @@
   function updateSolo() {
     const d = state[soloId];
     const m = meta[soloId];
-    document.getElementById('solo-icon').innerHTML          = m.icon;
+    document.getElementById('solo-icon').innerHTML            = m.icon;
     document.getElementById('solo-platform-name').textContent = m.name;
-    document.getElementById('solo-handle').textContent      = d.handle;
-    document.getElementById('solo-count-label').textContent = d.label;
-    document.getElementById('solo-glow').style.background   = m.glow;
-
+    document.getElementById('solo-handle').textContent        = d.handle;
+    document.getElementById('solo-count-label').textContent   = d.label;
+    document.getElementById('solo-glow').style.background     = m.glow;
     const countEl = document.getElementById('solo-count');
     countEl.style.color = m.color;
     countEl.textContent = fmt(d.count);
     countEl.classList.remove('flash'); void countEl.offsetWidth; countEl.classList.add('flash');
-
-    // Ambient orbs follow the solo platform colour
     document.querySelector('.orb-1').style.background = m.color;
     document.querySelector('.orb-3').style.background = m.color;
-
     const diff = d.count - d.prev;
     const de   = document.getElementById('solo-delta');
     if (diff !== 0) {
@@ -812,8 +1199,8 @@
   }
 
   function updateAll() {
-    Object.keys(state).forEach(id => updateCard(id));
-    const total = Object.values(state).reduce((s, v) => s + v.count, 0);
+    Object.keys(state).forEach(id => { if (state[id].enabled) updateCard(id); });
+    const total = Object.values(state).filter(s => s.enabled).reduce((s, v) => s + v.count, 0);
     document.getElementById('total-count').textContent = fmt(total);
     if (viewMode === 'solo') updateSolo();
   }
@@ -838,14 +1225,16 @@
 
   function simulateLiveUpdates() {
     Object.keys(state).forEach(id => {
-      const s  = state[id];
-      s.prev   = s.count;
-      const d  = Math.random() < 0.65
+      if (!state[id].enabled) return;
+      const s = state[id];
+      s.prev  = s.count;
+      const d = Math.random() < 0.65
         ? Math.floor(Math.random() * 4) + 1
         : -(Math.floor(Math.random() * 2));
-      s.count  = Math.max(0, s.count + d);
+      s.count = Math.max(0, s.count + d);
     });
     updateAll();
+    saveToStorage();
   }
 
   function updateClock() {
@@ -865,7 +1254,7 @@
     if (--countdown < 0) { countdown = INTERVAL; simulateLiveUpdates(); }
   }
 
-  // Modal
+  // ── Configure modal (for returning users) ──
   function openModal() {
     Object.keys(state).forEach(id => {
       document.getElementById('cfg-' + id + '-handle').value = state[id].handle;
@@ -886,7 +1275,6 @@
     document.getElementById('toggle-all').classList.toggle('selected',  modalMode === 'all');
     document.getElementById('toggle-solo').classList.toggle('selected', modalMode === 'solo');
     document.getElementById('platform-selector').classList.toggle('visible', modalMode === 'solo');
-    // Keep pick buttons in sync
     document.querySelectorAll('.platform-pick-btn').forEach(b => b.classList.remove('selected'));
     document.getElementById('pick-' + modalSolo).classList.add('selected');
   }
@@ -898,15 +1286,27 @@
       if (!isNaN(c)) { state[id].prev = state[id].count; state[id].count = c; }
     });
     viewMode = modalMode; soloId = modalSolo;
-    applyViewMode(); updateAll(); closeModal();
+    applyViewMode(); updateAll(); saveToStorage(); closeModal();
   }
 
-  document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
+  document.getElementById('modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal')) closeModal();
+  });
 
-  // Boot
-  updateAll();
+  // ── Boot ──
+  const hasExisting = loadFromStorage();
+
+  if (hasExisting) {
+    // Skip setup, go straight to display
+    const overlay = document.getElementById('setup-overlay');
+    overlay.style.display = 'none';
+    applyEnabledPlatforms();
+    applyViewMode();
+    updateAll();
+  }
+  // else: setup overlay is already visible, user fills it in
+
   updateClock();
-  applyViewMode();
   setInterval(updateClock, 1000);
   setInterval(updateRing, 1000);
 </script>
